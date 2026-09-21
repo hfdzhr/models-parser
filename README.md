@@ -81,7 +81,7 @@ Alat untuk melakukan fetching daftar model dari API provider (OpenAI-compatible 
 
 Jalankan perintah berikut:
 ```bash
-npm run web
+pnpm web
 ```
 Lalu buka browser di: **[http://localhost:3000](http://localhost:3000)**
 
@@ -98,9 +98,9 @@ Fitur di Web UI:
 
 Jalankan:
 ```bash
-npm start
+pnpm start
 # atau
-node bin/cli.js
+pnpm cli
 ```
 
 Wizard terminal akan memandu Anda langkah demi langkah:
@@ -153,7 +153,7 @@ node bin/cli.js \
 
 Proyek ini telah dilengkapi dengan unit test lengkap (100% lulus):
 ```bash
-npm test
+pnpm test
 ```
 Menguji:
 - Formatting model name & provider name
