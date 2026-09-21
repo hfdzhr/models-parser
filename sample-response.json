@@ -1,0 +1,396 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gs/ag/gemini-3.8-flash-high",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.8-flash-high",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.8-flash-high"
+    },
+    {
+      "id": "gs/ag/gemini-3.8-flash-medium",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.8-flash-medium",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.8-flash-medium"
+    },
+    {
+      "id": "gs/ag/gemini-3.8-flash-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.8-flash-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.8-flash-low"
+    },
+    {
+      "id": "gs/ag/gemini-3.8-flash",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.8-flash",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.8-flash"
+    },
+    {
+      "id": "gs/ag/gemini-3.7-flash-high",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.7-flash-high",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.7-flash-high"
+    },
+    {
+      "id": "gs/ag/gemini-3.7-flash-medium",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.7-flash-medium",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.7-flash-medium"
+    },
+    {
+      "id": "gs/ag/gemini-3.7-flash-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.7-flash-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.7-flash-low"
+    },
+    {
+      "id": "gs/ag/gemini-3.6-flash-high",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.6-flash-high",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.6-flash-high"
+    },
+    {
+      "id": "gs/ag/gemini-3.6-flash-medium",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.6-flash-medium",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.6-flash-medium"
+    },
+    {
+      "id": "gs/ag/gemini-3.6-flash-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.6-flash-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.6-flash-low"
+    },
+    {
+      "id": "gs/ag/gemini-3.5-flash-high",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.5-flash-high",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.5-flash-high"
+    },
+    {
+      "id": "gs/ag/gemini-3-flash-agent",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3-flash-agent",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3-flash-agent"
+    },
+    {
+      "id": "gs/ag/gemini-3.5-flash-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.5-flash-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.5-flash-low"
+    },
+    {
+      "id": "gs/ag/gemini-3.5-flash-extra-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.5-flash-extra-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.5-flash-extra-low"
+    },
+    {
+      "id": "gs/ag/gemini-pro-agent",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-pro-agent",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-pro-agent"
+    },
+    {
+      "id": "gs/ag/gemini-3.1-pro-low",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3.1-pro-low",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3.1-pro-low"
+    },
+    {
+      "id": "gs/ag/gemini-3-flash",
+      "object": "model",
+      "created": 1790008210,
+      "owned_by": "gs",
+      "permission": [],
+      "root": "ag/gemini-3-flash",
+      "parent": null,
+      "context_length": 1048576,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "name": "ag/gemini-3-flash"
+    }
+  ]
+}

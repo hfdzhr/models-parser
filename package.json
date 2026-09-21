@@ -1,0 +1,31 @@
+{
+  "name": "config-models-parser",
+  "version": "1.0.0",
+  "description": "Fetcher and parser for AI models to generate configurations for Pi, OpenCode, and more",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "config-models-parser": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "start": "node bin/cli.js",
+    "cli": "node bin/cli.js",
+    "web": "node src/server.js"
+  },
+  "keywords": [
+    "pi",
+    "opencode",
+    "models-parser",
+    "llm",
+    "openai",
+    "config"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@inquirer/prompts": "^7.3.3",
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1"
+  }
+}
