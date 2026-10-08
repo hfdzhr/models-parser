@@ -205,13 +205,13 @@ export function createServer() {
   });
 }
 
-export async function startServer(port = 3000) {
+export async function startServer(port = 3001) {
   const server = createServer();
   return new Promise((resolve) => {
     server.listen(port, () => {
       console.log();
-      console.log(pc.bold(pc.green(`🚀 Config Models Parser Web UI is running!`)));
-      console.log(pc.cyan(`👉 Open in browser: `) + pc.bold(pc.underline(`http://localhost:${port}`)));
+      console.log(pc.bold(pc.green(`Config Models Parser Web UI is running!`)));
+      console.log(pc.cyan(`Open in browser: `) + pc.bold(pc.underline(`http://localhost:${port}`)));
       console.log(pc.gray(`Press Ctrl+C to stop the server.`));
       console.log();
       resolve(server);
@@ -220,6 +220,6 @@ export async function startServer(port = 3000) {
 }
 
 if (process.argv[1] && process.argv[1].endsWith('server.js')) {
-  const port = parseInt(process.env.PORT, 10) || 3000;
+  const port = parseInt(process.env.PORT, 10) || 3001;
   startServer(port);
 }

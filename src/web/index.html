@@ -12,7 +12,7 @@
 <body>
   <header class="app-header">
     <div class="header-left">
-      <div class="logo-icon">⚡</div>
+      <div class="logo-icon">C</div>
       <div>
         <h1>Config Models Parser</h1>
         <p class="subtitle">Fetch, parse, and generate configs for Pi Coding Agent and OpenCode</p>
@@ -69,16 +69,16 @@
             <label for="api-key">API Key</label>
             <div class="password-wrap">
               <input type="password" id="api-key" placeholder="sk-...">
-              <button type="button" id="toggle-key-btn" class="btn-icon">👁</button>
+              <button type="button" id="toggle-key-btn" class="btn-icon">Show</button>
             </div>
           </div>
 
           <div class="action-buttons">
             <button type="submit" id="fetch-btn" class="btn btn-primary">
-              <span class="btn-icon-text">🚀</span> Fetch Models
+              Fetch Models
             </button>
             <button type="button" id="paste-json-btn" class="btn btn-secondary">
-              <span class="btn-icon-text">📋</span> Paste JSON
+              Paste JSON
             </button>
           </div>
         </form>
@@ -98,7 +98,7 @@
         </div>
 
         <div class="filter-bar">
-          <input type="text" id="model-search" placeholder="🔍 Search by name or model ID...">
+          <input type="text" id="model-search" placeholder="Search by name or model ID...">
         </div>
 
         <div class="models-list" id="models-list-container">
@@ -117,8 +117,8 @@
             <button class="tab-btn" data-tab="both">Combined</button>
           </div>
           <div class="output-actions">
-            <button id="copy-btn" class="btn btn-sm btn-outline">📋 Copy</button>
-            <button id="download-btn" class="btn btn-sm btn-outline">⬇ Download</button>
+            <button id="copy-btn" class="btn btn-sm btn-outline">Copy</button>
+            <button id="download-btn" class="btn btn-sm btn-outline">Download</button>
           </div>
         </div>
 
@@ -129,10 +129,10 @@
         <div class="save-actions-bar">
           <span class="save-title">Quick Apply:</span>
           <button id="save-pi-btn" class="btn btn-sm btn-success" title="Merge into ~/.pi/agent/models.json">
-            💾 Save to Pi config
+            Save to Pi config
           </button>
           <button id="save-opencode-btn" class="btn btn-sm btn-success" title="Merge into ~/.config/opencode/opencode.json">
-            💾 Save to OpenCode config
+            Save to OpenCode config
           </button>
         </div>
       </div>

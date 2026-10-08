@@ -267,7 +267,7 @@ async function handleFetchModels() {
   const fetchBtn = document.getElementById('fetch-btn');
 
   fetchBtn.disabled = true;
-  fetchBtn.innerHTML = '⏳ Fetching...';
+  fetchBtn.innerHTML = 'Fetching...';
 
   try {
     const res = await fetch('/api/fetch', {
@@ -287,7 +287,7 @@ async function handleFetchModels() {
     alert(`Failed to fetch models:\n${err.message}`);
   } finally {
     fetchBtn.disabled = false;
-    fetchBtn.innerHTML = '<span class="btn-icon-text">🚀</span> Fetch Models';
+    fetchBtn.innerHTML = 'Fetch Models';
   }
 }
 

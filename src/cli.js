@@ -113,16 +113,16 @@ async function runInteractiveWizard(initialOptions = {}) {
 
   if (sourceChoice === 'fetch') {
     console.log();
-    console.log(pc.yellow(`⏳ Fetching models from ${baseUrl}...`));
+    console.log(pc.yellow(`Fetching models from ${baseUrl}...`));
     try {
       const result = await fetchModels({
         baseUrl,
         apiKey: apiKey.trim()
       });
       rawModels = result.models;
-      console.log(pc.green(`✔ Successfully fetched ${rawModels.length} models from ${result.url}`));
+      console.log(pc.green(`Successfully fetched ${rawModels.length} models from ${result.url}`));
     } catch (err) {
-      console.log(pc.red(`✖ Failed to fetch models: ${err.message}`));
+      console.log(pc.red(`Failed to fetch models: ${err.message}`));
       const retryChoice = await select({
         message: 'What would you like to do?',
         choices: [
@@ -244,13 +244,13 @@ async function runInteractiveWizard(initialOptions = {}) {
 
   if (chosenAction === 'save-pi' || chosenAction === 'save-both') {
     const savedPath = await applyToPiConfig(piConfig);
-    console.log(pc.green(`✔ Successfully saved/merged into Pi config: ${pc.bold(savedPath)}`));
+    console.log(pc.green(`Successfully saved/merged into Pi config: ${pc.bold(savedPath)}`));
     console.log(pc.gray(`  (Backup created at ${savedPath}.bak)`));
   }
 
   if (chosenAction === 'save-opencode' || chosenAction === 'save-both') {
     const savedPath = await applyToOpenCodeConfig(opencodeConfig);
-    console.log(pc.green(`✔ Successfully saved/merged into OpenCode config: ${pc.bold(savedPath)}`));
+    console.log(pc.green(`Successfully saved/merged into OpenCode config: ${pc.bold(savedPath)}`));
     console.log(pc.gray(`  (Backup created at ${savedPath}.bak)`));
   }
 
@@ -262,7 +262,7 @@ async function runInteractiveWizard(initialOptions = {}) {
     });
     const outputData = targetFormat === 'both' ? { pi: piConfig, opencode: opencodeConfig } : (piConfig || opencodeConfig);
     await writeJsonFile(outPath, outputData, { createBackup: false });
-    console.log(pc.green(`✔ Successfully exported to ${outPath}`));
+    console.log(pc.green(`Successfully exported to ${outPath}`));
   }
 
   if (chosenAction === 'print') {
@@ -278,7 +278,7 @@ async function runInteractiveWizard(initialOptions = {}) {
   }
 
   console.log();
-  console.log(pc.bold(pc.green('Done! ✨')));
+  console.log(pc.bold(pc.green('Done!')));
 }
 
 async function promptLoadFile() {

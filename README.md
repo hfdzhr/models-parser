@@ -4,7 +4,7 @@ Alat untuk melakukan fetching daftar model dari API provider (OpenAI-compatible 
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
 1. **Auto Fetching & Discovery**:
    - Cukup masukkan nama provider, base URL, API key, dan jenis API.
@@ -75,7 +75,7 @@ Alat untuk melakukan fetching daftar model dari API provider (OpenAI-compatible 
 
 ---
 
-## 🚀 Cara Menjalankan
+## Cara Menjalankan
 
 ### 1. Mode Web Dashboard (Paling Mudah & Visual)
 
@@ -87,10 +87,10 @@ Lalu buka browser di: **[http://localhost:3000](http://localhost:3000)**
 
 Fitur di Web UI:
 - Isi Provider ID, Base URL, API Key.
-- Klik **"🚀 Fetch Models"** atau klik **"Load Example"** untuk mencoba data demo Sabah-AI.
+- Klik **"Fetch Models"** atau klik **"Load Example"** untuk mencoba data demo Sabah-AI.
 - Filter model dengan search box, pilih atau batalkan pilihan model.
 - Preview tab Pi / OpenCode / Combined.
-- Tombol **"💾 Save to Pi config"** atau **"💾 Save to OpenCode config"** untuk langsung memperbarui file konfigurasi!
+- Tombol **"Save to Pi config"** atau **"Save to OpenCode config"** untuk langsung memperbarui file konfigurasi!
 
 ---
 
@@ -149,7 +149,7 @@ node bin/cli.js \
 
 ---
 
-## 🧪 Menjalankan Pengujian (Unit Tests)
+## Menjalankan Pengujian (Unit Tests)
 
 Proyek ini telah dilengkapi dengan unit test lengkap (100% lulus):
 ```bash
