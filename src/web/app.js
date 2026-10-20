@@ -74,7 +74,7 @@ function initFormEvents() {
   const apiTypeSelect = document.getElementById('api-type');
   const customApiGroup = document.getElementById('custom-api-group');
   apiTypeSelect.addEventListener('change', () => {
-    customApiGroup.style.display = apiTypeSelect.value === 'custom' ? 'block' : 'none';
+    customApiGroup.style.display = apiTypeSelect.value === 'custom' ? '' : 'none';
     if (state.rawModels.length > 0) reparseAndRenderOutput();
   });
 
@@ -296,7 +296,7 @@ function loadModelsIntoState(modelsList) {
   state.selectedModelIds = new Set(modelsList.map((m) => m.id || m.name));
 
   document.getElementById('models-card').style.display = 'flex';
-  document.getElementById('models-count-badge').textContent = `${modelsList.length} models`;
+  updateStats();
 
   renderModelsList(modelsList);
   reparseAndRenderOutput();
@@ -332,13 +332,21 @@ function renderModelsList(models) {
     `;
 
     const checkbox = item.querySelector('.model-checkbox');
-    checkbox.addEventListener('change', () => {
+    const toggleSelection = () => {
       if (checkbox.checked) {
         state.selectedModelIds.add(id);
       } else {
         state.selectedModelIds.delete(id);
       }
       reparseAndRenderOutput();
+    };
+    checkbox.addEventListener('change', toggleSelection);
+
+    // Clicking anywhere on the row toggles its checkbox (command-deck rows are dense).
+    item.addEventListener('click', (e) => {
+      if (e.target === checkbox) return; // the checkbox toggles itself
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event('change'));
     });
 
     container.appendChild(item);
@@ -365,7 +373,20 @@ function filterModelsList(query) {
   });
 }
 
+function updateStats() {
+  const total = state.rawModels.length;
+  const selected = state.selectedModelIds.size;
+  const badge = document.getElementById('models-count-badge');
+  const cmdCount = document.getElementById('cmd-count');
+  const stats = document.getElementById('editor-stats');
+  if (badge) badge.textContent = `${total} models`;
+  if (cmdCount) cmdCount.textContent = `${total} models · ${selected} selected`;
+  if (stats) stats.textContent = `${selected} SELECTED · ${total} MODELS`;
+}
+
 async function reparseAndRenderOutput() {
+  updateStats();
+
   const providerId = document.getElementById('provider-id').value.trim() || 'custom-provider';
   const baseUrl = document.getElementById('base-url').value.trim();
   const apiKey = document.getElementById('api-key').value.trim();

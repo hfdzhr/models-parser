@@ -29,96 +29,77 @@
   </header>
 
   <main class="container">
-    <!-- Left Column: Inputs & Model Selector -->
-    <div class="column left-col">
-      <div class="card">
-        <div class="card-header">
-          <h2>1. Provider & API Setup</h2>
-          <button id="load-sample-btn" class="btn-ghost" title="Load Sabah-AI sample data">Load Example</button>
-        </div>
+    <!-- Command strip: provider setup + actions (folded from prototype/bold-dashboard variant A) -->
+    <section class="command-strip">
+      <form id="fetch-form" autocomplete="off" spellcheck="false">
+        <span class="cmd-prompt" aria-hidden="true">$</span>
 
-        <form id="fetch-form">
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="provider-id">Provider ID</label>
-              <input type="text" id="provider-id" placeholder="e.g. sabah-ai" value="sabah-ai" required>
-            </div>
-            <div class="form-group flex-1">
-              <label for="api-type">API Type (Pi)</label>
-              <select id="api-type">
-                <option value="openai-completions" selected>openai-completions</option>
-                <option value="anthropic-messages">anthropic-messages</option>
-                <option value="google-generative-ai">google-generative-ai</option>
-                <option value="custom">Custom...</option>
-              </select>
-            </div>
-          </div>
+        <span class="cmd-field">
+          <label for="provider-id">provider</label>
+          <input type="text" id="provider-id" placeholder="e.g. sabah-ai" value="sabah-ai" required>
+        </span>
 
-          <div class="form-group" id="custom-api-group" style="display: none;">
-            <label for="custom-api">Custom API Type</label>
-            <input type="text" id="custom-api" placeholder="Enter custom api identifier">
-          </div>
+        <span class="cmd-field">
+          <label for="api-type">api</label>
+          <select id="api-type">
+            <option value="openai-completions" selected>openai-completions</option>
+            <option value="anthropic-messages">anthropic-messages</option>
+            <option value="google-generative-ai">google-generative-ai</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </span>
 
-          <div class="form-group">
-            <label for="base-url">Base URL</label>
-            <input type="url" id="base-url" placeholder="https://vibing.softyan.net/v1" value="https://vibing.softyan.net/v1" required>
-            <small class="hint">Endpoint /models will automatically be queried.</small>
-          </div>
+        <span class="cmd-field" id="custom-api-group" style="display: none;">
+          <label for="custom-api">custom</label>
+          <input type="text" id="custom-api" placeholder="custom api identifier">
+        </span>
 
-          <div class="form-group">
-            <label for="api-key">API Key</label>
-            <div class="password-wrap">
-              <input type="password" id="api-key" placeholder="sk-...">
-              <button type="button" id="toggle-key-btn" class="btn-icon">Show</button>
-            </div>
-          </div>
+        <span class="cmd-field grow">
+          <label for="base-url">base-url</label>
+          <input type="url" id="base-url" placeholder="https://host/v1" value="https://vibing.softyan.net/v1" required title="/models will automatically be queried">
+        </span>
 
-          <div class="action-buttons">
-            <button type="submit" id="fetch-btn" class="btn btn-primary">
-              Fetch Models
-            </button>
-            <button type="button" id="paste-json-btn" class="btn btn-secondary">
-              Paste JSON
-            </button>
-          </div>
-        </form>
-      </div>
+        <span class="cmd-field">
+          <label for="api-key">key</label>
+          <span class="password-wrap">
+            <input type="password" id="api-key" placeholder="sk-...">
+            <button type="button" id="toggle-key-btn" class="btn-ghost btn-xs">Show</button>
+          </span>
+        </span>
 
-      <!-- Models List Card (Initially Hidden until models loaded) -->
-      <div class="card" id="models-card" style="display: none;">
-        <div class="card-header">
-          <div>
-            <h2>2. Discovered Models</h2>
-            <span class="badge" id="models-count-badge">0 models</span>
-          </div>
+        <button type="submit" id="fetch-btn" class="cmd-run">Fetch Models</button>
+        <button type="button" id="paste-json-btn" class="btn-ghost btn-xs">Paste JSON</button>
+        <button type="button" id="load-sample-btn" class="btn-ghost btn-xs">Load Example</button>
+
+        <span class="cmd-count" id="cmd-count">0 models · 0 selected</span>
+      </form>
+    </section>
+
+    <div class="deck">
+      <!-- Left: dense one-line model list -->
+      <section class="panel models-panel" id="models-card">
+        <div class="panel-header models-header">
+          <h3 class="panel-title">Models</h3>
+          <span class="badge" id="models-count-badge">0 models</span>
+          <input type="search" id="model-search" placeholder="search name or id..." aria-label="Filter models by name or id">
           <div class="selection-controls">
-            <button type="button" id="select-all-btn" class="btn-small">Select All</button>
-            <button type="button" id="deselect-all-btn" class="btn-small">Clear</button>
+            <button type="button" id="select-all-btn" class="btn-ghost btn-xs">Select All</button>
+            <button type="button" id="deselect-all-btn" class="btn-ghost btn-xs">Clear</button>
           </div>
         </div>
-
-        <div class="filter-bar">
-          <input type="text" id="model-search" placeholder="Search by name or model ID...">
-        </div>
-
         <div class="models-list" id="models-list-container">
           <!-- Populated by JS -->
+          <div class="models-hint">// no models yet — Fetch, Paste JSON, or Load Example</div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Right Column: Output Preview -->
-    <div class="column right-col">
-      <div class="card output-card">
-        <div class="card-header output-header">
+      <!-- Right: JSON editor with tabs and save actions -->
+      <section class="panel editor-panel">
+        <div class="panel-header editor-header">
           <div class="tabs">
-            <button class="tab-btn active" data-tab="pi">Pi (models.json)</button>
-            <button class="tab-btn" data-tab="opencode">OpenCode (opencode.json)</button>
-            <button class="tab-btn" data-tab="both">Combined</button>
-          </div>
-          <div class="output-actions">
-            <button id="copy-btn" class="btn btn-sm btn-outline">Copy</button>
-            <button id="download-btn" class="btn btn-sm btn-outline">Download</button>
+            <button class="tab-btn active" data-tab="pi">models.json</button>
+            <button class="tab-btn" data-tab="opencode">opencode.json</button>
+            <button class="tab-btn" data-tab="both">both</button>
           </div>
         </div>
 
@@ -126,20 +107,24 @@
           <pre><code id="json-output">// Configure provider settings and click "Fetch Models" or "Load Example" to generate config</code></pre>
         </div>
 
-        <div class="save-actions-bar">
-          <span class="save-title">Quick Apply:</span>
-          <button id="save-pi-btn" class="btn btn-sm btn-success" title="Merge into ~/.pi/agent/models.json">
-            Save to Pi config
-          </button>
-          <button id="save-opencode-btn" class="btn btn-sm btn-success" title="Merge into ~/.config/opencode/opencode.json">
-            Save to OpenCode config
-          </button>
+        <div class="editor-foot">
+          <span class="editor-stats" id="editor-stats">0 SELECTED · 0 MODELS</span>
+          <div class="editor-actions">
+            <button id="copy-btn" class="btn-ghost btn-xs">Copy</button>
+            <button id="download-btn" class="btn-ghost btn-xs">Download</button>
+            <button id="save-pi-btn" class="btn-acid" title="Merge into ~/.pi/agent/models.json">
+              Save → Pi
+            </button>
+            <button id="save-opencode-btn" class="btn-acid" title="Merge into ~/.config/opencode/opencode.json">
+              Save → OpenCode
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   </main>
 
-  <!-- Modal for pasting JSON -->
+  <!-- Modal for pasting JSON (opens from the command strip) -->
   <div class="modal-backdrop" id="paste-modal" style="display: none;">
     <div class="modal-box">
       <div class="modal-header">
@@ -150,8 +135,8 @@
         <textarea id="raw-json-input" placeholder='Paste {"object":"list","data":[...]} here...' rows="14"></textarea>
       </div>
       <div class="modal-footer">
-        <button id="cancel-modal-btn" class="btn btn-secondary">Cancel</button>
-        <button id="apply-pasted-json-btn" class="btn btn-primary">Parse Models</button>
+        <button id="cancel-modal-btn" class="btn-ghost">Cancel</button>
+        <button id="apply-pasted-json-btn" class="btn-acid">Parse Models</button>
       </div>
     </div>
   </div>
