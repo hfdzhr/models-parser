@@ -149,6 +149,10 @@ function applyProfileToForm(profile) {
 /**
  * Name of the profile a successful save will have upserted: the first
  * provider entry of the config being saved.
+ *
+ * NOTE: this mirrors the server-side deriveSavedProfile contract on
+ * purpose — src/web/app.js runs as a classic browser script and cannot
+ * import the node-side profiles helpers, so keep both in sync manually.
  */
 function deriveSavedProfileName(config) {
   if (config?.providers && typeof config.providers === 'object') {
@@ -320,7 +324,7 @@ async function saveGeneratedConfig(configKey, savedPathKey, label) {
     return;
   }
 
-  const body = savedPathKey === 'piSavedPath'
+  const body = configKey === 'pi'
     ? { piConfig: config, savePi: true }
     : { opencodeConfig: config, saveOpenCode: true };
 

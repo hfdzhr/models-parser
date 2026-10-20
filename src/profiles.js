@@ -96,11 +96,19 @@ export async function upsertProfile(profile, profilesPath = getProfilesPath()) {
     profiles[index] = normalized;
   }
 
-  await fs.mkdir(path.dirname(profilesPath), { recursive: true });
-  await fs.writeFile(profilesPath, JSON.stringify({ profiles }, null, 2) + '\n', 'utf8');
+  await writeProfilesFile(profilesPath, profiles);
 
   const refetched = await loadProfiles(profilesPath);
   return refetched.find((p) => p?.name === normalized.name) ?? normalized;
+}
+
+/**
+ * Write a profiles array as { profiles: [...] } pretty printed with two
+ * spaces plus a trailing newline, creating the parent directory first.
+ */
+export async function writeProfilesFile(profilesPath, profiles) {
+  await fs.mkdir(path.dirname(profilesPath), { recursive: true });
+  await fs.writeFile(profilesPath, JSON.stringify({ profiles }, null, 2) + '\n', 'utf8');
 }
 
 /**

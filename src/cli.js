@@ -20,6 +20,7 @@ import {
   getProfilesPath,
   loadProfiles,
   upsertProfile,
+  writeProfilesFile,
   seedProfilesFromPiConfig,
   seedProfilesFromOpenCodeConfig,
   mergeProfiles
@@ -120,9 +121,7 @@ async function refreshKnownProfiles() {
   // when the existing file was unreadable, so a corrupt file is not clobbered.
   if (existingReadable && merged.length > existing.length) {
     try {
-      const profilesPath = getProfilesPath();
-      await fs.mkdir(path.dirname(profilesPath), { recursive: true });
-      await fs.writeFile(profilesPath, JSON.stringify({ profiles: merged }, null, 2) + '\n', 'utf8');
+      await writeProfilesFile(getProfilesPath(), merged);
     } catch (err) {
       console.warn(pc.yellow(`Could not save refreshed provider profiles: ${err.message}`));
     }
@@ -144,17 +143,11 @@ async function safeReadJson(filePath, label) {
  * Remember the just-saved provider as a profile named after the providerId.
  * A profiles failure must not spoil an already successful save.
  */
-async function upsertSavedProfile(providerId, baseUrl, api, apiKey) {
+async function upsertSavedProfile(profile) {
   try {
-    await upsertProfile({
-      name: providerId,
-      providerId,
-      baseUrl,
-      api,
-      apiKey
-    });
+    await upsertProfile(profile);
   } catch (err) {
-    console.warn(pc.yellow(`Could not update provider profile "${providerId}": ${err.message}`));
+    console.warn(pc.yellow(`Could not update provider profile "${profile.name}": ${err.message}`));
   }
 }
 
@@ -365,7 +358,7 @@ async function runInteractiveWizard(initialOptions = {}, profile = null) {
   }
 
   if (chosenAction === 'save-pi' || chosenAction === 'save-opencode' || chosenAction === 'save-both') {
-    await upsertSavedProfile(providerId, baseUrl, finalApiType, apiKey);
+    await upsertSavedProfile({ name: providerId, providerId, baseUrl, api: finalApiType, apiKey });
   }
 
   if (chosenAction === 'export-file') {
@@ -495,7 +488,7 @@ async function runNonInteractive(options, profile = null) {
       savedAny = true;
     }
     if (savedAny) {
-      await upsertSavedProfile(providerId, baseUrl, apiType, apiKey);
+      await upsertSavedProfile({ name: providerId, providerId, baseUrl, api: apiType, apiKey });
     }
   }
 

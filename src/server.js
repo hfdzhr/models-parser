@@ -13,7 +13,7 @@ import {
   getPiConfigPath,
   getOpenCodeConfigPath
 } from './index.js';
-import { getProfilesPath, loadProfiles, upsertProfile } from './profiles.js';
+import { getProfilesPath, loadProfiles, upsertProfile, seedProfilesFromPiConfig, seedProfilesFromOpenCodeConfig } from './profiles.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,35 +76,15 @@ function sendJson(res, statusCode, data) {
  * Derive one provider profile from a saved config: the first provider
  * entry of the Pi config (or the OpenCode config as fallback) becomes a
  * profile named after that providerId, carrying its baseUrl and apiKey.
+ * Reuses the seed helpers from profiles.js so the config-shape knowledge
+ * lives in one place.
  */
 function deriveSavedProfile(piConfig, opencodeConfig) {
-  if (piConfig?.providers && typeof piConfig.providers === 'object') {
-    const [providerId, entry] = Object.entries(piConfig.providers)[0] ?? [];
-    if (providerId) {
-      return {
-        name: providerId,
-        providerId,
-        baseUrl: entry?.baseUrl ?? '',
-        api: entry?.api || 'openai-completions',
-        apiKey: entry?.apiKey ?? ''
-      };
-    }
-  }
-
-  if (opencodeConfig?.provider && typeof opencodeConfig.provider === 'object') {
-    const [providerId, entry] = Object.entries(opencodeConfig.provider)[0] ?? [];
-    if (providerId) {
-      return {
-        name: providerId,
-        providerId,
-        baseUrl: entry?.options?.baseURL ?? '',
-        api: entry?.options?.api || 'openai-completions',
-        apiKey: entry?.options?.apiKey ?? ''
-      };
-    }
-  }
-
-  return null;
+  const [saved] = [
+    ...seedProfilesFromPiConfig(piConfig),
+    ...seedProfilesFromOpenCodeConfig(opencodeConfig)
+  ];
+  return saved ?? null;
 }
 
 export function createServer() {
@@ -245,6 +225,12 @@ export function createServer() {
 
         if (typeof name !== 'string' || name.trim() === '') {
           return sendJson(res, 400, { error: 'Profile name is required and must be non-empty' });
+        }
+
+        for (const field of ['providerId', 'baseUrl', 'api', 'apiKey']) {
+          if (body[field] !== undefined && typeof body[field] !== 'string') {
+            return sendJson(res, 400, { error: `Profile ${field} must be a string` });
+          }
         }
 
         const profile = await upsertProfile({ name, providerId, baseUrl, api, apiKey }, profilesFilePath);

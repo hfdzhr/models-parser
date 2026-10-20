@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
@@ -269,6 +269,65 @@ describe('Rolling backups', () => {
       assert.strictEqual(backups.length, 5);
       assert.deepStrictEqual(backups[0].data, { n: 6 });
       assert.deepStrictEqual(backups[4].data, { n: 2 });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('same-timestamp collision names suffixes -1, -2, ... in order', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+    const fixed = Date.now() - 1000;
+    const clock = mock.method(Date, 'now', () => fixed);
+
+    try {
+      await writeJsonFile(file, { n: 1 });
+      await writeJsonFile(file, { n: 2 });
+      await writeJsonFile(file, { n: 3 }); // candidate bak-<fixed> exists -> bak-<fixed>-1
+
+      const backups = (await readBackups(tmpDir, 'models.json')).sort(newestFirst);
+      assert.deepEqual(backups.map((b) => b.file), [
+        `models.json.bak-${fixed}-1`, // newest by suffix tie-break
+        `models.json.bak-${fixed}`
+      ]);
+      assert.deepStrictEqual(backups[0].data, { n: 2 });
+      assert.deepStrictEqual(backups[1].data, { n: 1 });
+      assert.deepStrictEqual(JSON.parse(await fs.readFile(file, 'utf8')), { n: 3 });
+    } finally {
+      clock.mock.restore();
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('prune tie-break keeps higher collision suffix over plain sibling', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      await writeJsonFile(file, { n: 1 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 2 });
+      await sleep(5);
+
+      // Fabricate a same-timestamp collision sibling of the newest backup.
+      const plainNewest = (await readBackups(tmpDir, 'models.json')).sort(newestFirst)[0];
+      const plainName = plainNewest.file; // e.g. models.json.bak-<ts2>
+      const collisionName = plainName.replace(/\.bak-(\d+)$/, '.bak-$1-2');
+      await fs.writeFile(
+        path.join(tmpDir, collisionName),
+        JSON.stringify({ sentinel: 'collision' }),
+        'utf8'
+      );
+
+      await writeJsonFile(file, { n: 3 }, { maxBackups: 2 });
+
+      const backups = (await readBackups(tmpDir, 'models.json')).sort(newestFirst);
+      const names = backups.map((b) => b.file);
+      assert.strictEqual(backups.length, 2);
+      assert.ok(names.some((f) => f.endsWith('-2')), 'collision sibling must survive the prune');
+      assert.ok(!names.includes(plainName), 'plain newest sibling pruned away');
+      const collision = backups.find((b) => b.file === collisionName);
+      assert.deepStrictEqual(collision.data, { sentinel: 'collision' });
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }

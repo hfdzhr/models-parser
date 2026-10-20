@@ -26,5 +26,5 @@ Data provider yang disimpan tool sendiri — di luar file config Pi/OpenCode —
 _Avoid_: config, saved provider, file target.
 
 ## rolling backup
-Salinan cadangan yang dijaga beberapa yang terakhir (bukan satu `.bak` yang ditimpa), dibuat tool setiap menulis file config. Nama file: `<file>.bak-<timestamp>` (tabrakan timestamp dapat suffix `-2`, `-3`, ...); sibling backup lebih tua dipangkas sampai tersisa 5 backup terbaru. Legacy `<file>.bak` tidak pernah dicocokkan, disentuh, atau dihitung.
+Salinan cadangan yang dijaga beberapa yang terakhir (bukan satu `.bak` yang ditimpa), dibuat tool setiap menulis file config. Nama file: `<file>.bak-<timestamp>` (tabrakan timestamp diakhiri suffix `-1`, `-2` bergantian); sibling backup lebih tua dipangkas sampai tersisa 5 backup terbaru. Legacy `<file>.bak` tidak pernah dicocokkan, disentuh, atau dihitung.
 _Avoid_: backup tunggal.

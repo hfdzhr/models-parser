@@ -69,7 +69,7 @@ function escapeRegExp(str) {
 
 /**
  * Returns next available backup path <file>.bak-<timestamp>, appending
- * -2, -3, ... on collision with an existing sibling backup.
+ * -1, -2, ... on collision with an existing sibling backup.
  */
 async function nextBackupPath(filePath) {
   const base = `${filePath}.bak-${Date.now()}`;
@@ -123,7 +123,8 @@ async function pruneRollingBackups(filePath, maxBackups) {
   let entries;
   try {
     entries = await fs.readdir(dir);
-  } catch {
+  } catch (err) {
+    console.warn(`Could not prune rolling backups (readdir ${dir}): ${err.message}`);
     return; // non-fatal
   }
 
@@ -139,7 +140,8 @@ async function pruneRollingBackups(filePath, maxBackups) {
   for (const { entry } of backups.slice(Math.max(0, maxBackups))) {
     try {
       await fs.unlink(path.join(dir, entry));
-    } catch {
+    } catch (err) {
+      console.warn(`Could not remove stale backup ${entry}: ${err.message}`);
       // non-fatal: keep pruning the rest
     }
   }
@@ -147,7 +149,7 @@ async function pruneRollingBackups(filePath, maxBackups) {
 
 /**
  * Save data as JSON to file with optional rolling timestamped backups.
- * Backups are stored as <file>.bak-<timestamp> (collision suffix -2, -3, ...)
+ * Backups are stored as <file>.bak-<timestamp> (collision suffix -1, -2, ...)
  * and pruned to the newest `maxBackups`; legacy plain <file>.bak is left
  * untouched and never counted.
  */
