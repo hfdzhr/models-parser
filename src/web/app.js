@@ -9,8 +9,11 @@ const state = {
   systemStatus: {
     pi: false,
     opencode: false
-  }
+  },
+  profiles: []
 };
+
+const BUILTIN_API_TYPES = ['openai-completions', 'anthropic-messages', 'google-generative-ai'];
 
 const SAMPLE_RESPONSE = {
   object: 'list',
@@ -37,6 +40,7 @@ const SAMPLE_RESPONSE = {
 
 document.addEventListener('DOMContentLoaded', () => {
   initSystemStatus();
+  initProfileSelect();
   initFormEvents();
   initModalEvents();
   initOutputEvents();
@@ -70,6 +74,94 @@ async function initSystemStatus() {
   }
 }
 
+async function refreshProfileSelect(selectedName = null) {
+  try {
+    const res = await fetch('/api/profiles');
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    state.profiles = Array.isArray(data.profiles) ? data.profiles : [];
+    populateProfileSelect(selectedName);
+  } catch (err) {
+    console.warn('Could not load provider profiles:', err);
+  }
+}
+
+async function initProfileSelect() {
+  await refreshProfileSelect();
+}
+
+function populateProfileSelect(selectedName = null) {
+  const select = document.getElementById('profile-select');
+  const keepValue = selectedName !== null ? selectedName : select.value;
+
+  select.innerHTML = '';
+  const emptyOption = document.createElement('option');
+  emptyOption.value = '';
+  emptyOption.textContent = 'none';
+  select.appendChild(emptyOption);
+
+  for (const profile of state.profiles) {
+    if (!profile?.name) continue;
+    const option = document.createElement('option');
+    option.value = profile.name;
+    option.textContent = profile.name;
+    select.appendChild(option);
+  }
+
+  if (keepValue && state.profiles.some((p) => p?.name === keepValue)) {
+    select.value = keepValue;
+  }
+}
+
+function applySelectedProfile() {
+  const select = document.getElementById('profile-select');
+  if (!select.value) return;
+
+  const profile = state.profiles.find((p) => p?.name === select.value);
+  if (!profile) return;
+
+  applyProfileToForm(profile);
+}
+
+function applyProfileToForm(profile) {
+  document.getElementById('provider-id').value = profile.providerId || profile.name;
+
+  const apiTypeSelect = document.getElementById('api-type');
+  const customApiGroup = document.getElementById('custom-api-group');
+  const customApiInput = document.getElementById('custom-api');
+  if (BUILTIN_API_TYPES.includes(profile.api)) {
+    apiTypeSelect.value = profile.api;
+    customApiGroup.style.display = 'none';
+  } else {
+    apiTypeSelect.value = 'custom';
+    customApiInput.value = profile.api || '';
+    customApiGroup.style.display = '';
+  }
+
+  document.getElementById('base-url').value = profile.baseUrl || '';
+  document.getElementById('api-key').value = profile.apiKey || '';
+
+  if (state.rawModels.length > 0) reparseAndRenderOutput();
+}
+
+/**
+ * Name of the profile a successful save will have upserted: the first
+ * provider entry of the config being saved.
+ */
+function deriveSavedProfileName(config) {
+  if (config?.providers && typeof config.providers === 'object') {
+    const keys = Object.keys(config.providers);
+    if (keys.length > 0) return keys[0];
+  }
+  if (config?.provider && typeof config.provider === 'object') {
+    const keys = Object.keys(config.provider);
+    if (keys.length > 0) return keys[0];
+  }
+  return null;
+}
+
 function initFormEvents() {
   const apiTypeSelect = document.getElementById('api-type');
   const customApiGroup = document.getElementById('custom-api-group');
@@ -94,6 +186,11 @@ function initFormEvents() {
 
   document.getElementById('api-key').addEventListener('input', () => {
     if (state.rawModels.length > 0) reparseAndRenderOutput();
+  });
+
+  // Profile dropdown: prefill the provider fields from the saved profile.
+  document.getElementById('profile-select').addEventListener('change', () => {
+    applySelectedProfile();
   });
 
   // Fetch form submit
@@ -206,59 +303,46 @@ function initOutputEvents() {
     showToast(`Downloaded ${filename}!`);
   });
 
-  // Save to Pi button
-  document.getElementById('save-pi-btn').addEventListener('click', async () => {
-    if (!state.generatedConfigs.pi) {
-      showToast('No Pi configuration generated yet.');
-      return;
-    }
-    try {
-      const res = await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          piConfig: state.generatedConfigs.pi,
-          savePi: true
-        })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        showToast(`Saved to Pi config (${data.piSavedPath})`);
-        initSystemStatus();
-      } else {
-        alert(`Error saving to Pi: ${data.error}`);
-      }
-    } catch (err) {
-      alert(`Error saving to Pi: ${err.message}`);
-    }
+  // Save actions: both targets share one POST /api/save flow
+  document.getElementById('save-pi-btn').addEventListener('click', () => {
+    saveGeneratedConfig('pi', 'piSavedPath', 'Pi');
   });
 
-  // Save to OpenCode button
-  document.getElementById('save-opencode-btn').addEventListener('click', async () => {
-    if (!state.generatedConfigs.opencode) {
-      showToast('No OpenCode configuration generated yet.');
-      return;
-    }
-    try {
-      const res = await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          opencodeConfig: state.generatedConfigs.opencode,
-          saveOpenCode: true
-        })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        showToast(`Saved to OpenCode config (${data.opencodeSavedPath})`);
-        initSystemStatus();
-      } else {
-        alert(`Error saving to OpenCode: ${data.error}`);
-      }
-    } catch (err) {
-      alert(`Error saving to OpenCode: ${err.message}`);
-    }
+  document.getElementById('save-opencode-btn').addEventListener('click', () => {
+    saveGeneratedConfig('opencode', 'opencodeSavedPath', 'OpenCode');
   });
+}
+
+async function saveGeneratedConfig(configKey, savedPathKey, label) {
+  const config = state.generatedConfigs[configKey];
+  if (!config) {
+    showToast(`No ${label} configuration generated yet.`);
+    return;
+  }
+
+  const body = savedPathKey === 'piSavedPath'
+    ? { piConfig: config, savePi: true }
+    : { opencodeConfig: config, saveOpenCode: true };
+
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`Saved to ${label} config (${data[savedPathKey]})`);
+      initSystemStatus();
+      // A successful save upserts a provider profile server-side; reload
+      // the dropdown and preselect the entry this save produced.
+      await refreshProfileSelect(deriveSavedProfileName(config));
+    } else {
+      alert(`Error saving to ${label}: ${data.error}`);
+    }
+  } catch (err) {
+    alert(`Error saving to ${label}: ${err.message}`);
+  }
 }
 
 async function handleFetchModels() {

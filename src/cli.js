@@ -16,6 +16,16 @@ import {
   writeJsonFile,
   readJsonFile
 } from './index.js';
+import {
+  getProfilesPath,
+  loadProfiles,
+  upsertProfile,
+  seedProfilesFromPiConfig,
+  seedProfilesFromOpenCodeConfig,
+  mergeProfiles
+} from './profiles.js';
+
+const BUILTIN_API_TYPES = ['openai-completions', 'anthropic-messages', 'google-generative-ai'];
 
 export function createCli() {
   const program = new Command();
@@ -27,7 +37,8 @@ export function createCli() {
     .option('-p, --provider <id>', 'Provider ID (e.g. sabah-ai)')
     .option('-u, --url <url>', 'Base URL (e.g. https://vibing.softyan.net/v1)')
     .option('-k, --key <key>', 'API Key (e.g. sk-...)')
-    .option('-a, --api <type>', 'API type for Pi (default: openai-completions)', 'openai-completions')
+    .option('-a, --api <type>', 'API type for Pi (default: openai-completions or the profile api)')
+    .option('--use <name>', 'Use a saved provider profile (name is case-sensitive)')
     .option('-t, --target <target>', 'Target format: pi, opencode, or both', 'pi')
     .option('-f, --file <path>', 'Load raw models response from a local JSON file')
     .option('--filter <query>', 'Filter models by ID or keyword')
@@ -37,10 +48,12 @@ export function createCli() {
     .action(async (options) => {
       const isInteractive = options.interactive || (!options.provider && !options.url && !options.file);
 
+      const profile = await resolveUseProfile(options);
+
       if (isInteractive) {
-        await runInteractiveWizard(options);
+        await runInteractiveWizard(options, profile);
       } else {
-        await runNonInteractive(options);
+        await runNonInteractive(options, profile);
       }
     });
 
@@ -57,7 +70,95 @@ export function createCli() {
   return program;
 }
 
-async function runInteractiveWizard(initialOptions = {}) {
+/**
+ * Seed known profiles from the system config files and resolve --use.
+ * Seeding only ever ADDS profiles (existing entries win untouched) and
+ * the profiles file is only rewritten when at least one new seed was
+ * imported. Returns the resolved profile for --use, or null.
+ */
+async function resolveUseProfile(options) {
+  const profiles = await refreshKnownProfiles();
+
+  if (!options.use) {
+    return null;
+  }
+
+  // Profile names are matched case-sensitively.
+  const found = profiles.find((p) => p?.name === options.use);
+  if (!found) {
+    console.error(pc.red(`Error: Unknown profile "${options.use}".`));
+    const names = profiles.map((p) => p?.name).filter((n) => typeof n === 'string' && n.length > 0);
+    if (names.length > 0) {
+      console.error(pc.gray(`Known profiles: ${names.join(', ')}`));
+    } else {
+      console.error(pc.gray('No profiles are saved yet.'));
+    }
+    process.exit(1);
+  }
+  return found;
+}
+
+async function refreshKnownProfiles() {
+  const piConfig = await safeReadJson(getPiConfigPath(), 'Pi config');
+  const opencodeConfig = await safeReadJson(getOpenCodeConfigPath(), 'OpenCode config');
+
+  let existing = [];
+  let existingReadable = true;
+  try {
+    existing = await loadProfiles();
+  } catch (err) {
+    existingReadable = false;
+    console.warn(pc.yellow(`Could not load saved provider profiles: ${err.message}`));
+  }
+
+  const merged = mergeProfiles(existing, [
+    ...seedProfilesFromPiConfig(piConfig),
+    ...seedProfilesFromOpenCodeConfig(opencodeConfig)
+  ]);
+
+  // Write back only when at least one new seed was imported. Never rewrite
+  // when the existing file was unreadable, so a corrupt file is not clobbered.
+  if (existingReadable && merged.length > existing.length) {
+    try {
+      const profilesPath = getProfilesPath();
+      await fs.mkdir(path.dirname(profilesPath), { recursive: true });
+      await fs.writeFile(profilesPath, JSON.stringify({ profiles: merged }, null, 2) + '\n', 'utf8');
+    } catch (err) {
+      console.warn(pc.yellow(`Could not save refreshed provider profiles: ${err.message}`));
+    }
+  }
+
+  return merged;
+}
+
+async function safeReadJson(filePath, label) {
+  try {
+    return await readJsonFile(filePath);
+  } catch (err) {
+    console.warn(pc.yellow(`Skipping profile seed from ${label} (${filePath}): ${err.message}`));
+    return null;
+  }
+}
+
+/**
+ * Remember the just-saved provider as a profile named after the providerId.
+ * A profiles failure must not spoil an already successful save.
+ */
+async function upsertSavedProfile(providerId, baseUrl, api, apiKey) {
+  try {
+    await upsertProfile({
+      name: providerId,
+      providerId,
+      baseUrl,
+      api,
+      apiKey
+    });
+  } catch (err) {
+    console.warn(pc.yellow(`Could not update provider profile "${providerId}": ${err.message}`));
+  }
+}
+
+async function runInteractiveWizard(initialOptions = {}, profile = null) {
   console.log();
   console.log(pc.bold(pc.cyan('╔══════════════════════════════════════════════════════════╗')));
   console.log(pc.bold(pc.cyan('║              Config Models Parser (Pi & OpenCode)        ║')));
@@ -66,13 +167,19 @@ async function runInteractiveWizard(initialOptions = {}) {
 
   const providerId = await input({
     message: 'Enter Provider ID / Name (e.g. sabah-ai):',
-    default: initialOptions.provider || 'sabah-ai',
+    default: profile?.providerId || initialOptions.provider || 'sabah-ai',
     validate: (val) => (val && val.trim().length > 0 ? true : 'Provider ID cannot be empty')
   });
 
+  // A profile api outside the three builtins preselects "custom".
+  const profileApi = (profile?.api || '').trim();
+  const preselectedApiType = BUILTIN_API_TYPES.includes(profileApi)
+    ? profileApi
+    : (profileApi ? 'custom' : (initialOptions.api || 'openai-completions'));
+
   const apiType = await select({
     message: 'Select API Type (for Pi):',
-    default: initialOptions.api || 'openai-completions',
+    default: preselectedApiType,
     choices: [
       { name: 'openai-completions (OpenAI Compatible, vLLM, Ollama, Proxies)', value: 'openai-completions' },
       { name: 'anthropic-messages (Claude API Compatible)', value: 'anthropic-messages' },
@@ -85,20 +192,23 @@ async function runInteractiveWizard(initialOptions = {}) {
   if (apiType === 'custom') {
     finalApiType = await input({
       message: 'Enter custom API type:',
-      default: 'openai-completions'
+      default: profileApi || initialOptions.api || 'openai-completions'
     });
   }
 
   const baseUrl = await input({
     message: 'Enter Base URL (e.g. https://vibing.softyan.net/v1):',
-    default: initialOptions.url || 'https://vibing.softyan.net/v1',
+    default: profile?.baseUrl || initialOptions.url || 'https://vibing.softyan.net/v1',
     validate: (val) => (val && val.trim().length > 0 ? true : 'Base URL cannot be empty')
   });
 
-  const apiKey = await password({
-    message: 'Enter API Key (sk-...):',
+  const savedKey = (profile?.apiKey || '').trim();
+  const typedKey = await password({
+    message: savedKey ? 'Enter API Key (press Enter to keep the saved key):' : 'Enter API Key (sk-...):',
     mask: '*'
   });
+  // An empty entry keeps the saved key from the profile.
+  const apiKey = typedKey.trim() === '' ? savedKey : typedKey.trim();
 
   const sourceChoice = await select({
     message: 'Choose model data source:',
@@ -245,13 +355,17 @@ async function runInteractiveWizard(initialOptions = {}) {
   if (chosenAction === 'save-pi' || chosenAction === 'save-both') {
     const savedPath = await applyToPiConfig(piConfig);
     console.log(pc.green(`Successfully saved/merged into Pi config: ${pc.bold(savedPath)}`));
-    console.log(pc.gray(`  (Backup created at ${savedPath}.bak)`));
+    console.log(pc.gray(`  (Rolling backups kept as ${savedPath}.bak-<timestamp>, newest five)`));
   }
 
   if (chosenAction === 'save-opencode' || chosenAction === 'save-both') {
     const savedPath = await applyToOpenCodeConfig(opencodeConfig);
     console.log(pc.green(`Successfully saved/merged into OpenCode config: ${pc.bold(savedPath)}`));
-    console.log(pc.gray(`  (Backup created at ${savedPath}.bak)`));
+    console.log(pc.gray(`  (Rolling backups kept as ${savedPath}.bak-<timestamp>, newest five)`));
+  }
+
+  if (chosenAction === 'save-pi' || chosenAction === 'save-opencode' || chosenAction === 'save-both') {
+    await upsertSavedProfile(providerId, baseUrl, finalApiType, apiKey);
   }
 
   if (chosenAction === 'export-file') {
@@ -314,11 +428,13 @@ async function promptPasteJson() {
   return extractModelsList(rawJson);
 }
 
-async function runNonInteractive(options) {
-  const providerId = options.provider || 'custom-provider';
-  const baseUrl = options.url;
-  const apiKey = options.key || '';
-  const apiType = options.api || 'openai-completions';
+async function runNonInteractive(options, profile = null) {
+  // Explicit --provider/--url/--key/--api flags win; the --use profile
+  // (if any) only fills gaps.
+  const providerId = options.provider || profile?.providerId || 'custom-provider';
+  const baseUrl = options.url || profile?.baseUrl || null;
+  const apiKey = options.key || profile?.apiKey || '';
+  const apiType = options.api || profile?.api || 'openai-completions';
   const target = options.target || 'pi';
 
   let rawModels = [];
@@ -367,13 +483,19 @@ async function runNonInteractive(options) {
   const finalOutput = target === 'both' ? { pi: piConfig, opencode: opencodeConfig } : (piConfig || opencodeConfig);
 
   if (options.save) {
+    let savedAny = false;
     if (piConfig) {
       const p = await applyToPiConfig(piConfig);
       console.log(pc.green(`Saved to Pi config: ${p}`));
+      savedAny = true;
     }
     if (opencodeConfig) {
       const p = await applyToOpenCodeConfig(opencodeConfig);
       console.log(pc.green(`Saved to OpenCode config: ${p}`));
+      savedAny = true;
+    }
+    if (savedAny) {
+      await upsertSavedProfile(providerId, baseUrl, apiType, apiKey);
     }
   }
 

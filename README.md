@@ -67,7 +67,7 @@ Alat untuk melakukan fetching daftar model dari API provider (OpenAI-compatible 
 
 4. **Safe Auto-Merge & Backup**:
    - Jika disimpan langsung ke file konfigurasi sistem, tool ini akan menggabungkan (*merge*) provider baru tanpa menimpa (*overwrite*) provider lain yang sudah ada.
-   - Otomatis membuat salinan backup `.bak` sebelum perubahan ditulis.
+   - Otomatis membuat *rolling backup* bertanda waktu (`<file>.bak-<timestamp>`) sebelum perubahan ditulis; hanya 5 backup terbaru yang disimpan (legacy `.bak` versi lama dibiarkan utuh dan tidak dihitung).
 
 5. **2 Antarmuka: Interactive CLI & Modern Web Dashboard**:
    - Terminal wizard yang interaktif dengan keyboard navigation.
@@ -149,6 +149,23 @@ node bin/cli.js \
 
 ---
 
+## Profil Provider
+
+Tool menyimpan profil provider miliknya sendiri — di luar file config Pi/OpenCode — di:
+
+```
+~/.config/config-models-parser/profiles.json
+```
+
+Bentuk file: `{ "profiles": [ { name, providerId, baseUrl, api, apiKey, savedAt } ] }`, diurutkan berdasarkan nama.
+
+- **Auto-seed**: setiap kali CLI dijalankan (wizard maupun mode argumen), tool membaca `~/.pi/agent/models.json` dan `~/.config/opencode/opencode.json` lalu mengimpor provider yang belum ada sebagai profil baru. Import hanya **menambah** — profil yang sudah ada tidak pernah diubah — dan file profil hanya ditulis ulang bila ada minimal satu seed baru.
+- **`--use <nama>`**: memakai profil tersimpan sebagai nilai bawaan. Pencarian nama bersifat **case-sensitive**; nama yang tidak dikenal akan keluar (exit 1) dengan pesan merah berisi daftar profil yang tersedia. Di wizard, profil mengisi bawaan untuk Provider ID, Base URL, dan API type, serta API key secara senyap (tekan Enter untuk mempertahankan key tersimpan). Di mode argumen, flag eksplisit `-p/-u/-k/-a` **selalu menang** atas nilai profil, dan baseUrl dari profil memenuhi syarat `--url` pada mode `--file`.
+- **Upsert saat save**: setiap save yang berhasil (wizard `save-pi` / `save-opencode` / `save-both`, flag `--save`, maupun tombol save Web UI) menulis/memperbarui satu profil bernama sesuai `providerId` dengan `baseUrl`, `api`, dan `apiKey` yang baru disimpan.
+- **Web UI**: strip perintah memiliki dropdown **profile** (dimuat otomatis dari `GET /api/profiles`, opsi pertama `none`). Memilih profil mengisi provider, API type (termasuk mode custom untuk api di luar tiga bawaan), base URL, dan API key; tabel profil juga di-refresh setelah save yang berhasil, dengan entri terakhir yang tersimpan otomatis terpilih.
+
+---
+
 ## Menjalankan Pengujian (Unit Tests)
 
 Proyek ini telah dilengkapi dengan unit test lengkap (100% lulus):
@@ -160,4 +177,5 @@ Menguji:
 - Ekstraksi respon dari berbagai bentuk endpoint `/models`
 - Transformasi struktur Pi `models.json` & OpenCode `opencode.json`
 - Penggabungan (*merging*) aman tanpa merusak provider lain
-- Penulisan ke file dengan backup otomatis
+- Penulisan ke file dengan rolling backup otomatis (`.bak-<timestamp>`, 5 terbaru)
+- Modul profil provider (`loadProfiles`, `upsertProfile`, seed, merge) dan endpoint HTTP profilnya

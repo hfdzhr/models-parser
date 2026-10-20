@@ -16,15 +16,15 @@ Perintah `/` di Pi yang diregister via `pi.registerCommand()`. Extension ini men
 Command baru yang dibuat extension ini. Latar: perintah bawaan `reload-models` **tidak ada** di docs Pi; refresh `models.json` yang terbukti hanya **buka `/model`**. Maka extension membuat `/reload-models` sendiri sebagai pemicu/instruksi refresh setelah simpan.
 
 ## merge per-model
-Aturan tulis `models.json`: entri `models` tambah/ganti per ID model yang sama pada provider itu (mengikuti perilaku bawaan Pi), bukan timpa seluruh blok provider. Dilengkapi backup `.bak` + redact log.
+Aturan tulis `models.json`: entri `models` tambah/ganti per ID model yang sama pada provider itu (mengikuti perilaku bawaan Pi), bukan timpa seluruh blok provider. Dilengkapi rolling backup `.bak-<timestamp>` + redact log.
 
 ## batalkan-jika-ada
 Jika `providerId` sudah ada di `models.json`, command batal + tampilkan pesan, tanpa menimpa. Tanpa flag `--force`.
 
-## profile
-Data provider yang disimpan oleh tool sendiri — di luar file config Pi/OpenCode — untuk dipakai ulang tanpa mengetik ulang baseUrl/apiKey.
-_Avoid_: config, saved provider.
+## provider profile
+Data provider yang disimpan tool sendiri — di luar file config Pi/OpenCode — untuk dipakai ulang tanpa mengetik ulang baseUrl/apiKey. Tersimpan di `~/.config/config-models-parser/profiles.json` urut nama. Di-seed otomatis dari config Pi/OpenCode (hanya menambah, existing menang), dipilih per nama case-sensitive lewat `--use <nama>` di CLI atau dropdown **profile** di Web UI, dan di-upsert bernama sesuai `providerId` setiap save yang berhasil.
+_Avoid_: config, saved provider, file target.
 
 ## rolling backup
-Salinan cadangan yang dijaga beberapa yang terakhir (bukan satu `.bak` yang ditimpa), dibuat tool setiap menulis file config.
+Salinan cadangan yang dijaga beberapa yang terakhir (bukan satu `.bak` yang ditimpa), dibuat tool setiap menulis file config. Nama file: `<file>.bak-<timestamp>` (tabrakan timestamp dapat suffix `-2`, `-3`, ...); sibling backup lebih tua dipangkas sampai tersisa 5 backup terbaru. Legacy `<file>.bak` tidak pernah dicocokkan, disentuh, atau dihitung.
 _Avoid_: backup tunggal.
