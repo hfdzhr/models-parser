@@ -63,20 +63,99 @@ export async function readJsonFile(filePath) {
   }
 }
 
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
- * Save data as JSON to file with optional backup
+ * Returns next available backup path <file>.bak-<timestamp>, appending
+ * -2, -3, ... on collision with an existing sibling backup.
  */
-export async function writeJsonFile(filePath, data, { createBackup = true } = {}) {
+async function nextBackupPath(filePath) {
+  const base = `${filePath}.bak-${Date.now()}`;
+  let candidate = base;
+  for (let n = 1; await pathExists(candidate); n++) {
+    candidate = `${base}-${n}`;
+  }
+  return candidate;
+}
+
+async function pathExists(p) {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Copy existing file to a timestamped backup and prune older siblings.
+ * Non-ENOENT copy failures throw; each unlink failure during pruning is
+ * non-fatal.
+ */
+async function createRollingBackup(filePath, maxBackups) {
+  let backupPath;
+  try {
+    backupPath = await nextBackupPath(filePath);
+    await fs.copyFile(filePath, backupPath);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return; // source file does not exist yet — nothing to back up
+    }
+    throw new Error(`Failed to create backup at ${backupPath}: ${err.message}`);
+  }
+
+  await pruneRollingBackups(filePath, maxBackups);
+}
+
+/**
+ * Prune sibling backups matching <basename>.bak-<ts>[-<n>] down to the
+ * newest `maxBackups` by embedded timestamp. Legacy plain <file>.bak is
+ * never matched, touched, or counted.
+ */
+async function pruneRollingBackups(filePath, maxBackups) {
+  const dir = path.dirname(filePath);
+  const pattern = new RegExp(
+    `^${escapeRegExp(path.basename(filePath))}\\.bak-\\d+(-\\d+)?$`
+  );
+
+  let entries;
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return; // non-fatal
+  }
+
+  const backups = entries
+    .filter((entry) => pattern.test(entry))
+    .map((entry) => {
+      const ts = Number(entry.match(/\.bak-(\d+)/)?.[1]);
+      const suffix = Number(entry.match(/\.bak-\d+(?:-(\d+))?$/)?.[1] || 0);
+      return { entry, ts: Number.isFinite(ts) ? ts : 0, suffix };
+    })
+    .sort((a, b) => (b.ts - a.ts) || (b.suffix - a.suffix));
+
+  for (const { entry } of backups.slice(Math.max(0, maxBackups))) {
+    try {
+      await fs.unlink(path.join(dir, entry));
+    } catch {
+      // non-fatal: keep pruning the rest
+    }
+  }
+}
+
+/**
+ * Save data as JSON to file with optional rolling timestamped backups.
+ * Backups are stored as <file>.bak-<timestamp> (collision suffix -2, -3, ...)
+ * and pruned to the newest `maxBackups`; legacy plain <file>.bak is left
+ * untouched and never counted.
+ */
+export async function writeJsonFile(filePath, data, { createBackup = true, maxBackups = 5 } = {}) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 
   if (createBackup) {
-    try {
-      await fs.copyFile(filePath, `${filePath}.bak`);
-    } catch (err) {
-      if (err.code !== 'ENOENT') {
-        throw new Error(`Failed to create backup at ${filePath}.bak: ${err.message}`);
-      }
-    }
+    await createRollingBackup(filePath, maxBackups);
   }
 
   const jsonStr = JSON.stringify(data, null, 2) + '\n';

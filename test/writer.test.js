@@ -8,7 +8,8 @@ import {
   mergeOpenCodeConfig,
   applyToPiConfig,
   applyToOpenCodeConfig,
-  readJsonFile
+  readJsonFile,
+  writeJsonFile
 } from '../src/config-writer.js';
 
 describe('applyToPiConfig and applyToOpenCodeConfig with custom path', () => {
@@ -121,5 +122,155 @@ describe('mergeOpenCodeConfig', () => {
     assert.ok(merged.provider.google);
     assert.ok(merged.provider['sabah-ai']);
     assert.ok(merged.provider['sabah-ai'].models['model-1']);
+  });
+});
+
+describe('Rolling backups', () => {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Sibling files matching <basename>.bak-<ts>[-<n>]; plain .bak excluded.
+  const backupPattern = (name) =>
+    new RegExp(`^${escapeRegExp(name)}\\.bak-\\d+(-\\d+)?$`);
+
+  async function readBackups(dir, name) {
+    const entries = await fs.readdir(dir);
+    const pattern = backupPattern(name);
+    return Promise.all(entries
+      .filter((entry) => pattern.test(entry))
+      .map(async (entry) => ({
+        file: entry,
+        ts: Number(entry.match(/\.bak-(\d+)/)[1]),
+        suffix: Number((entry.match(/\.bak-\d+(?:-(\d+))?$/)?.[1]) || 0),
+        data: JSON.parse(await fs.readFile(path.join(dir, entry), 'utf8'))
+      })));
+  }
+
+  // Newest first: highest timestamp, then highest collision suffix.
+  const newestFirst = (a, b) => (b.ts - a.ts) || (b.suffix - a.suffix);
+
+  it('first write to nonexistent file leaves zero .bak-* files', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      const result = await writeJsonFile(file, { n: 1 });
+      assert.strictEqual(result, file);
+
+      const backups = await readBackups(tmpDir, 'models.json');
+      assert.strictEqual(backups.length, 0);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('second write creates exactly one .bak-<ts> whose content equals the previous original content', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      await writeJsonFile(file, { n: 1 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 2 });
+
+      const backups = await readBackups(tmpDir, 'models.json');
+      assert.strictEqual(backups.length, 1);
+      assert.match(backups[0].file, /\.bak-\d+$/);
+      assert.deepStrictEqual(backups[0].data, { n: 1 });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('with maxBackups=2 after four writes only two newest remain and newest equals the second-to-last previous content', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      await writeJsonFile(file, { n: 1 }, { maxBackups: 2 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 2 }, { maxBackups: 2 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 3 }, { maxBackups: 2 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 4 }, { maxBackups: 2 });
+
+      const backups = (await readBackups(tmpDir, 'models.json')).sort(newestFirst);
+      assert.strictEqual(backups.length, 2);
+      // newest backup holds the second-to-last written content (c3), one step behind the live file
+      assert.deepStrictEqual(backups[0].data, { n: 3 });
+      assert.deepStrictEqual(backups[1].data, { n: 2 });
+
+      const live = JSON.parse(await fs.readFile(file, 'utf8'));
+      assert.deepStrictEqual(live, { n: 4 });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('createBackup=false creates none', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      await fs.writeFile(file, JSON.stringify({ n: 0 }, null, 2) + '\n', 'utf8');
+      await sleep(5);
+      await writeJsonFile(file, { n: 1 }, { createBackup: false });
+
+      const backups = await readBackups(tmpDir, 'models.json');
+      assert.strictEqual(backups.length, 0);
+
+      const after = JSON.parse(await fs.readFile(file, 'utf8'));
+      assert.deepStrictEqual(after, { n: 1 });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('a pre-existing plain .bak file survives untouched', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+    const plainBak = `${file}.bak`;
+
+    try {
+      await writeJsonFile(file, { n: 1 });
+      await fs.writeFile(plainBak, 'legacy snapshot', 'utf8');
+
+      await sleep(5);
+      await writeJsonFile(file, { n: 2 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 3 });
+      await sleep(5);
+      await writeJsonFile(file, { n: 4 });
+
+      assert.strictEqual(await fs.readFile(plainBak, 'utf8'), 'legacy snapshot');
+
+      const backups = await readBackups(tmpDir, 'models.json');
+      assert.ok(backups.length > 0);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('with default maxBackups=5 after seven writes exactly five remain', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bak-test-'));
+    const file = path.join(tmpDir, 'models.json');
+
+    try {
+      for (let n = 1; n <= 7; n++) {
+        await writeJsonFile(file, { n });
+        await sleep(5);
+      }
+
+      const backups = (await readBackups(tmpDir, 'models.json')).sort(newestFirst);
+      assert.strictEqual(backups.length, 5);
+      assert.deepStrictEqual(backups[0].data, { n: 6 });
+      assert.deepStrictEqual(backups[4].data, { n: 2 });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });
