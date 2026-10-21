@@ -1,4 +1,4 @@
-import { loadProfiles, upsertProfile, getProfilesPath } from '../../src/profiles.js'
+import { loadProfiles, upsertProfile, getProfilesPath } from '#src/profiles.js'
 
 const profilesPath = getProfilesPath()
 

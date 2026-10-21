@@ -1,4 +1,4 @@
-import { fetchModels } from '../../src/index.js'
+import { fetchModels } from '#src/index.js'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

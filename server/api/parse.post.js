@@ -1,4 +1,4 @@
-import { extractModelsList, toPiConfig, toOpenCodeConfig } from '../../src/index.js'
+import { extractModelsList, toPiConfig, toOpenCodeConfig } from '#src/index.js'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

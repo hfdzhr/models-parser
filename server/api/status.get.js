@@ -1,4 +1,4 @@
-import { getPiConfigPath, getOpenCodeConfigPath } from '../../src/index.js'
+import { getPiConfigPath, getOpenCodeConfigPath } from '#src/index.js'
 import fs from 'node:fs/promises'
 
 export default defineEventHandler(async (_event) => {
