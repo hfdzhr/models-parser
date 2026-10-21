@@ -8,7 +8,8 @@ const OPTIONAL_FIELDS = ['providerId', 'baseUrl', 'api', 'apiKey'];
  * Returns default path to ~/.config/config-models-parser/profiles.json
  */
 export function getProfilesPath() {
-  return path.join(os.homedir(), '.config', 'config-models-parser', 'profiles.json');
+  const baseDir = process.env.VERCEL ? os.tmpdir() : os.homedir();
+  return path.join(baseDir, '.config', 'config-models-parser', 'profiles.json');
 }
 
 /**

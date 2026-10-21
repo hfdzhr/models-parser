@@ -54,6 +54,17 @@ async function initSystemStatus() {
     const piBadge = document.getElementById('pi-status');
     const opencodeBadge = document.getElementById('opencode-status');
 
+    if (data.cloud) {
+      piBadge.classList.add('active');
+      piBadge.querySelector('.status-text').textContent = 'Cloud';
+      piBadge.title = 'Running on Vercel: use Copy or Download to save configs';
+
+      opencodeBadge.classList.add('active');
+      opencodeBadge.querySelector('.status-text').textContent = 'Cloud';
+      opencodeBadge.title = 'Running on Vercel: use Copy or Download to save configs';
+      return;
+    }
+
     if (data.pi?.exists) {
       piBadge.classList.add('active');
       piBadge.querySelector('.status-text').textContent = 'Detected';

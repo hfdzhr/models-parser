@@ -42,6 +42,17 @@ const MIME_TYPES = {
 };
 
 async function parseRequestBody(req) {
+  if (req.body && typeof req.body === 'object') {
+    return req.body;
+  }
+  if (typeof req.body === 'string') {
+    try {
+      return req.body ? JSON.parse(req.body) : {};
+    } catch (err) {
+      throw new Error(`Invalid JSON body: ${err.message}`);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk) => {
@@ -106,6 +117,7 @@ export function createServer() {
     try {
       // API Routes
       if (pathname === '/api/status' && req.method === 'GET') {
+        const isCloud = Boolean(process.env.VERCEL);
         const piPath = getPiConfigPath();
         const opencodePath = getOpenCodeConfigPath();
 
@@ -122,6 +134,7 @@ export function createServer() {
         } catch {}
 
         return sendJson(res, 200, {
+          cloud: isCloud,
           pi: { path: piPath, exists: piExists },
           opencode: { path: opencodePath, exists: opencodeExists }
         });
@@ -184,6 +197,12 @@ export function createServer() {
       }
 
       if (pathname === '/api/save' && req.method === 'POST') {
+        if (process.env.VERCEL) {
+          return sendJson(res, 400, {
+            error: 'Cloud deployment detected: Direct save to local files is disabled on Vercel. Please use Copy or Download instead.'
+          });
+        }
+
         const body = await parseRequestBody(req);
         const { piConfig, opencodeConfig, savePi, saveOpenCode } = body;
 
@@ -283,7 +302,10 @@ export async function startServer(port = 3001) {
   });
 }
 
-if (process.argv[1] && process.argv[1].endsWith('server.js')) {
+let appServer = null;
+if ((process.argv[1] && process.argv[1].endsWith('server.js')) || process.env.VERCEL) {
   const port = parseInt(process.env.PORT, 10) || 3001;
-  startServer(port);
+  appServer = startServer(port);
 }
+
+export default appServer;
