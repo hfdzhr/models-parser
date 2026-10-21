@@ -4,6 +4,43 @@ import os from 'node:os';
 import path from 'node:path';
 import { createServer } from '../src/server.js';
 import { getProfilesPath } from '../src/profiles.js';
+import statusHandler from '../api/status.js';
+import fetchHandler from '../api/fetch.js';
+import parseHandler from '../api/parse.js';
+import saveHandler from '../api/save.js';
+import profilesHandler from '../api/profiles.js';
+
+function createMockRes() {
+  const res = {
+    statusCode: 200,
+    body: null,
+    headers: {},
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+    writeHead(code, headers) {
+      this.statusCode = code;
+      this.headers = headers || {};
+      return this;
+    },
+    end(data) {
+      if (data && !this.body) {
+        try {
+          this.body = JSON.parse(data);
+        } catch {
+          this.body = data;
+        }
+      }
+      return this;
+    }
+  };
+  return res;
+}
 
 const SERVERS = [];
 
@@ -78,5 +115,74 @@ describe('Vercel environment mode', () => {
         process.env.VERCEL = origVercel;
       }
     }
+  });
+});
+
+describe('Vercel API Serverless Handlers', () => {
+  it('api/status returns cloud: true and config paths', async () => {
+    const req = { method: 'GET' };
+    const res = createMockRes();
+    await statusHandler(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.cloud, true);
+    assert.ok(res.body.pi);
+    assert.ok(res.body.opencode);
+  });
+
+  it('api/status rejects non-GET with 405', async () => {
+    const req = { method: 'POST' };
+    const res = createMockRes();
+    await statusHandler(req, res);
+    assert.equal(res.statusCode, 405);
+  });
+
+  it('api/save returns 400 with cloud guidance', async () => {
+    const req = { method: 'POST', body: {} };
+    const res = createMockRes();
+    await saveHandler(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.ok(res.body.error.includes('Cloud deployment detected'));
+  });
+
+  it('api/fetch requires baseUrl', async () => {
+    const req = { method: 'POST', body: {} };
+    const res = createMockRes();
+    await fetchHandler(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res.body.error, 'Base URL is required');
+  });
+
+  it('api/parse transforms model list into Pi and OpenCode configs', async () => {
+    const req = {
+      method: 'POST',
+      body: {
+        providerId: 'my-prov',
+        baseUrl: 'https://test.api/v1',
+        apiKey: 'sk-test',
+        models: [
+          { id: 'test-model', context_length: 8192 }
+        ]
+      }
+    };
+    const res = createMockRes();
+    await parseHandler(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.modelCount, 1);
+    assert.ok(res.body.piConfig.providers['my-prov']);
+    assert.ok(res.body.opencodeConfig.provider['my-prov']);
+  });
+
+  it('api/profiles handles GET and rejects invalid POST', async () => {
+    const reqGet = { method: 'GET' };
+    const resGet = createMockRes();
+    await profilesHandler(reqGet, resGet);
+    assert.equal(resGet.statusCode, 200);
+    assert.ok(Array.isArray(resGet.body.profiles));
+
+    const reqPostBad = { method: 'POST', body: { name: '' } };
+    const resPostBad = createMockRes();
+    await profilesHandler(reqPostBad, resPostBad);
+    assert.equal(resPostBad.statusCode, 400);
   });
 });

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pc from 'picocolors';
+import fsSync from 'node:fs';
 import {
   fetchModels,
   extractModelsList,
@@ -17,7 +18,9 @@ import { getProfilesPath, loadProfiles, upsertProfile, seedProfilesFromPiConfig,
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const WEB_DIR = path.join(__dirname, 'web');
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const SRC_WEB_DIR = path.join(__dirname, 'web');
+const WEB_DIR = fsSync.existsSync(PUBLIC_DIR) ? PUBLIC_DIR : SRC_WEB_DIR;
 
 // Module-level override so tests (or embedders) can point the profile
 // routes at a custom profiles.json before mounting. Defaults to the
