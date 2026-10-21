@@ -1,11 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "public",
-  "rewrites": [
-    { "source": "/api/fetch",    "destination": "/api/fetch.js" },
-    { "source": "/api/parse",    "destination": "/api/parse.js" },
-    { "source": "/api/save",     "destination": "/api/save.js" },
-    { "source": "/api/status",   "destination": "/api/status.js" },
-    { "source": "/api/profiles", "destination": "/api/profiles.js" }
-  ]
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".output/public",
+  "framework": "nuxtjs"
 }
